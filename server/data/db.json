@@ -1,0 +1,249 @@
+[
+  {
+    "id": "feat-1769719130495-lxnzd",
+    "name": "Registration",
+    "category": "General",
+    "description": "Detected via filename keyword",
+    "status": "at_risk",
+    "layers": {
+      "unit": {
+        "name": "unit",
+        "status": "missing",
+        "tests": []
+      },
+      "api": {
+        "name": "api",
+        "status": "missing",
+        "tests": []
+      },
+      "e2e": {
+        "name": "e2e",
+        "status": "partial",
+        "tests": [
+          {
+            "id": "test-1769719130496-kj5tur455",
+            "name": "should successfully sign up with valid email & password",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:38:50.496Z"
+          },
+          {
+            "id": "test-1769719130496-3hbj74cpd",
+            "name": "Sign up validation – empty required fields",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:38:50.496Z"
+          },
+          {
+            "id": "test-1769719130496-it8uk79fy",
+            "name": "Sign up validation – invalid email format",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:38:50.496Z"
+          },
+          {
+            "id": "test-1769719130496-8s6a376ci",
+            "name": "should successfully sign up with bonus opt-in",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:38:50.496Z"
+          },
+          {
+            "id": "test-1769719130496-17g9nknv5",
+            "name": "Sign up validation – invalid promo code",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:38:50.496Z"
+          }
+        ]
+      }
+    },
+    "duplications": [],
+    "gaps": [],
+    "correlations": [
+      {
+        "scenarioId": "SCENARIO-001",
+        "scenarioName": "Positive: Standard User Registration",
+        "relatedUnitTests": [],
+        "relatedApiTests": [],
+        "relatedE2ETests": [
+          "test-1769719130496-kj5tur455"
+        ],
+        "description": "Verifies the happy path where a new user successfully creates an account using a valid email address and password."
+      },
+      {
+        "scenarioId": "SCENARIO-002",
+        "scenarioName": "Positive: Registration with Bonus Opt-in",
+        "relatedUnitTests": [],
+        "relatedApiTests": [],
+        "relatedE2ETests": [
+          "test-1769719130496-8s6a376ci"
+        ],
+        "description": "Verifies successful registration flow when the user opts into a bonus or marketing feature during sign up."
+      },
+      {
+        "scenarioId": "SCENARIO-003",
+        "scenarioName": "Negative: Validation of Required Fields",
+        "relatedUnitTests": [],
+        "relatedApiTests": [],
+        "relatedE2ETests": [
+          "test-1769719130496-3hbj74cpd"
+        ],
+        "description": "Ensures the system properly handles validation errors and rejects submissions when required fields are left empty."
+      },
+      {
+        "scenarioId": "SCENARIO-004",
+        "scenarioName": "Negative: Invalid Email Format Validation",
+        "relatedUnitTests": [],
+        "relatedApiTests": [],
+        "relatedE2ETests": [
+          "test-1769719130496-it8uk79fy"
+        ],
+        "description": "Checks that the registration form validates the email format and rejects entries that do not meet the criteria."
+      },
+      {
+        "scenarioId": "SCENARIO-005",
+        "scenarioName": "Negative: Invalid Promo Code Validation",
+        "relatedUnitTests": [],
+        "relatedApiTests": [],
+        "relatedE2ETests": [
+          "test-1769719130496-17g9nknv5"
+        ],
+        "description": "Validates that the system correctly identifies and rejects an invalid or non-existent promotional code during the sign-up process."
+      }
+    ]
+  },
+  {
+    "id": "feat-1769719559237-3dw5x",
+    "name": "Quests",
+    "category": "General",
+    "description": "Automatically created from filename",
+    "status": "at_risk",
+    "layers": {
+      "unit": {
+        "name": "unit",
+        "status": "missing",
+        "tests": []
+      },
+      "api": {
+        "name": "api",
+        "status": "missing",
+        "tests": []
+      },
+      "e2e": {
+        "name": "e2e",
+        "status": "partial",
+        "tests": [
+          {
+            "id": "test-1769719559237-xfevgbf9b",
+            "name": "should load quests page successfully",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-5vdn5fhai",
+            "name": "should display all navigation tabs",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-qpd259idi",
+            "name": "should display quest sections",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-yxhyltzb9",
+            "name": "should switch between tabs successfully",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-hsttd2e3d",
+            "name": "should display quest cards with images and alt text",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-mucb2heij",
+            "name": "should display reward information on quest cards",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-hzceki1d7",
+            "name": "should have progress bars with valid ARIA attributes",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-4pimzidrs",
+            "name": "should display FAQ section with questions",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-i1temoe0p",
+            "name": "should expand FAQ questions when clicked",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          },
+          {
+            "id": "test-1769719559237-vo0w98uav",
+            "name": "should display rewards in valid format",
+            "status": "pass",
+            "lastRun": "2026-01-29T20:45:59.237Z"
+          }
+        ]
+      }
+    },
+    "duplications": [],
+    "gaps": [],
+    "correlations": []
+  },
+  {
+    "id": "feat-1769795597485-mjrbs",
+    "name": "Login",
+    "description": "Automatically created from login.spec.ts",
+    "category": "General",
+    "status": "at_risk",
+    "layers": {
+      "unit": {
+        "name": "unit",
+        "status": "partial",
+        "tests": [
+          {
+            "name": "should enable login button when form is empty",
+            "status": "pending",
+            "filePath": "login.spec.ts",
+            "id": "test-1769795532842-h4gnxsh5i",
+            "lastRun": "2026-01-30T17:52:12.842Z"
+          }
+        ]
+      },
+      "api": {
+        "name": "api",
+        "status": "missing",
+        "tests": []
+      },
+      "e2e": {
+        "name": "e2e",
+        "status": "partial",
+        "tests": [
+          {
+            "name": "should successfully login with valid credentials",
+            "status": "pending",
+            "filePath": "login.spec.ts",
+            "id": "test-1769796194025-g84gow41v",
+            "lastRun": "2026-01-30T18:03:14.025Z"
+          },
+          {
+            "name": "should display error message with invalid credentials",
+            "status": "pending",
+            "filePath": "login.spec.ts",
+            "id": "test-1769796194025-h1coos1jp",
+            "lastRun": "2026-01-30T18:03:14.025Z"
+          }
+        ]
+      }
+    },
+    "duplications": [],
+    "gaps": [],
+    "correlations": []
+  }
+]

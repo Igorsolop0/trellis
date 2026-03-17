@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Core Domain Models (spec Phase 1) ───
+
+model Feature {
+  id          String              @id @default(uuid())
+  name        String
+  description String?
+  category    String?
+  scenarios   BehaviorScenario[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model BehaviorScenario {
+  id         String              @id @default(uuid())
+  featureId  String
+  feature    Feature             @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  title      String
+  summary    String?
+  confidence Float               @default(0)
+  source     ScenarioSource      @default(inferred)
+  links           ScenarioLink[]
+  insights        OptimizationInsight[]
+  recommendations Recommendation[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model TestArtifact {
+  id              String           @id @default(uuid())
+  name            String
+  layer           TestLayer
+  filepath        String?
+  codeSignature   String?
+  intentSummary   String?
+  framework       TestFramework?
+  avgDurationMs   Int?
+  flakyRate       Float            @default(0)
+  runCount        Int              @default(0)
+  links           ScenarioLink[]
+  runs            ExecutionRun[]
+  recommendations Recommendation[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([filepath, name])
+}
+
+model ScenarioLink {
+  id             String          @id @default(uuid())
+  scenarioId     String
+  scenario       BehaviorScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  testArtifactId String
+  testArtifact   TestArtifact    @relation(fields: [testArtifactId], references: [id], onDelete: Cascade)
+  confidence     Float           @default(0)
+  rationale      String?
+  linkType       LinkType        @default(verifies)
+  createdAt      DateTime        @default(now())
+
+  @@unique([scenarioId, testArtifactId])
+}
+
+model ExecutionRun {
+  id             String          @id @default(uuid())
+  testArtifactId String
+  testArtifact   TestArtifact    @relation(fields: [testArtifactId], references: [id], onDelete: Cascade)
+  status         TestStatus
+  durationMs     Int?
+  commitHash     String?
+  ciJobId        String?
+  flaky          Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+}
+
+model Recommendation {
+  id             String              @id @default(uuid())
+  scenarioId     String
+  scenario       BehaviorScenario    @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  testArtifactId String?
+  testArtifact   TestArtifact?       @relation(fields: [testArtifactId], references: [id], onDelete: SetNull)
+  action         RecommendAction
+  fromLayer      TestLayer?
+  toLayer        TestLayer?
+  reason         String
+  estimatedSavingMs Int              @default(0)
+  status         RecommendStatus     @default(pending)
+  createdAt      DateTime            @default(now())
+}
+
+model OptimizationInsight {
+  id             String          @id @default(uuid())
+  scenarioId     String
+  scenario       BehaviorScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  type           InsightType
+  severity       InsightSeverity @default(medium)
+  summary        String
+  recommendation String?
+  createdAt      DateTime        @default(now())
+}
+
+// ─── Enums ───
+
+enum TestLayer {
+  unit
+  api
+  e2e
+}
+
+enum TestStatus {
+  pass
+  fail
+  skipped
+  pending
+}
+
+enum ScenarioSource {
+  inferred
+  manual
+  imported
+}
+
+enum LinkType {
+  verifies
+  partially_verifies
+  duplicates
+}
+
+enum TestFramework {
+  jest
+  vitest
+  playwright
+  cypress
+  supertest
+  other
+}
+
+enum InsightType {
+  missing_layer
+  redundancy
+  expensive_e2e
+  weak_assertion
+}
+
+enum InsightSeverity {
+  high
+  medium
+  low
+}
+
+enum RecommendAction {
+  keep_at_layer
+  move_to_api
+  move_to_unit
+  remove_duplicate
+  add_lower_level
+  migrate_framework
+}
+
+enum RecommendStatus {
+  pending
+  accepted
+  rejected
+  done
+}

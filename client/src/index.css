@@ -1,0 +1,137 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@plugin "tailwindcss-animate";
+@custom-variant dark (&:is(.dark *));
+@config "../tailwind.config.js";
+
+:root {
+  --radius: 0.75rem;
+
+  /* Palette — warm obsidian + electric accents */
+  --background: #0B0E11;
+  --foreground: #E8ECF1;
+  --card: #12161C;
+  --card-foreground: #E8ECF1;
+  --card-hover: #181D25;
+  --popover: #12161C;
+  --popover-foreground: #E8ECF1;
+  --primary: #6EE7B7;
+  --primary-foreground: #0B0E11;
+  --secondary: #1A1F28;
+  --secondary-foreground: #A0AAB8;
+  --muted: #1A1F28;
+  --muted-foreground: #6B7280;
+  --accent: #1A1F28;
+  --accent-foreground: #E8ECF1;
+  --destructive: #F87171;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #6EE7B7;
+
+  /* Layer colors — vivid and distinct */
+  --unit: #60A5FA;
+  --unit-glow: rgba(96, 165, 250, 0.15);
+  --api: #C084FC;
+  --api-glow: rgba(192, 132, 252, 0.15);
+  --e2e: #34D399;
+  --e2e-glow: rgba(52, 211, 153, 0.15);
+
+  /* Insight severity */
+  --severity-high: #F87171;
+  --severity-medium: #FBBF24;
+  --severity-low: #60A5FA;
+
+  /* Confidence */
+  --confidence-high: #6EE7B7;
+  --confidence-mid: #FBBF24;
+  --confidence-low: #F87171;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Outfit', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Noise texture overlay */
+.noise-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  z-index: 9999;
+}
+
+/* Glow effects for layer nodes */
+.glow-unit { box-shadow: 0 0 20px var(--unit-glow), 0 0 60px var(--unit-glow); }
+.glow-api { box-shadow: 0 0 20px var(--api-glow), 0 0 60px var(--api-glow); }
+.glow-e2e { box-shadow: 0 0 20px var(--e2e-glow), 0 0 60px var(--e2e-glow); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Animated gradient border */
+@keyframes border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--unit), var(--api), var(--e2e), var(--unit));
+  background-size: 300% 300%;
+  animation: border-flow 6s ease infinite;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
