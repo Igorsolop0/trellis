@@ -10,7 +10,7 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="sdui-theme">
+      <ThemeProvider defaultTheme="light" storageKey="trellis-theme">
         <DashboardLayout>
           <Switch>
             <Route path="/" component={Dashboard} />

@@ -1,6 +1,6 @@
-# Sdui Test Dashboard - Project Documentation
+# Trellis - Project Documentation
 
-**Project Name:** Sdui Test Dashboard  
+**Project Name:** Trellis  
 **Version:** 1.0.0  
 **Status:** MVP - Feature Detail View Implemented  
 **Last Updated:** January 2026  
@@ -25,7 +25,7 @@
 
 ## Executive Summary
 
-The **Sdui Test Dashboard** is a frontend-only visualization tool designed to help development teams understand test coverage across three critical testing layers: Unit tests, API tests, and End-to-End (E2E) tests. The dashboard presents test data as an interconnected chain, emphasizing the relationship between different test layers and highlighting potential gaps or duplications.
+The **Trellis** is a frontend-only visualization tool designed to help development teams understand test coverage across three critical testing layers: Unit tests, API tests, and End-to-End (E2E) tests. The dashboard presents test data as an interconnected chain, emphasizing the relationship between different test layers and highlighting potential gaps or duplications.
 
 The current implementation focuses on a **Feature Detail View** that displays comprehensive test coverage information for individual features (such as "Login"). The design uses a modern, iOS-inspired aesthetic with pill-shaped nodes connected by gradient lines, creating a visual metaphor of a continuous testing chain.
 
@@ -42,7 +42,7 @@ The current implementation focuses on a **Feature Detail View** that displays co
 
 ### Vision Statement
 
-The Sdui Test Dashboard aims to make test coverage transparent and actionable by visualizing the interconnected nature of testing layers. Instead of treating Unit, API, and E2E tests as separate concerns, the dashboard presents them as a unified chain, helping teams understand how different test layers complement each other and where gaps or overlaps exist.
+The Trellis aims to make test coverage transparent and actionable by visualizing the interconnected nature of testing layers. Instead of treating Unit, API, and E2E tests as separate concerns, the dashboard presents them as a unified chain, helping teams understand how different test layers complement each other and where gaps or overlaps exist.
 
 ### Primary Goals
 
@@ -85,7 +85,7 @@ The Sdui Test Dashboard aims to make test coverage transparent and actionable by
 ### Project Structure
 
 ```
-sdui-test-dashboard/
+trellis/
 ├── client/
 │   ├── public/                 # Static assets
 │   │   └── images/            # Image assets
@@ -134,7 +134,7 @@ App
 
 ### Color Palette
 
-The dashboard uses a carefully curated color palette that aligns with the Sdui brand while providing clear visual distinction between the three testing layers.
+The dashboard uses a carefully curated color palette that aligns with the Trellis brand while providing clear visual distinction between the three testing layers.
 
 | Layer | Primary Color | Gradient Start | Gradient End | Purpose |
 |-------|--------------|-----------------|--------------|---------|
@@ -797,7 +797,7 @@ The following environment variables are automatically injected:
 1. **Clone the repository:**
    ```bash
    git clone <repository-url>
-   cd sdui-test-dashboard
+   cd trellis
    ```
 
 2. **Install dependencies:**

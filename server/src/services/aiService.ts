@@ -20,7 +20,7 @@ if (apiKey && apiKey !== 'your_key_here') {
             baseURL: "https://oai.hconeai.com/v1",
             defaultHeaders: {
                 "Helicone-Auth": `Bearer ${heliconeKey}`,
-                "Helicone-Property-Project": "SduiTestDashboard"
+                "Helicone-Property-Project": "Trellis"
             }
         });
     } else {

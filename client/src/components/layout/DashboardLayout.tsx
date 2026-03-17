@@ -20,7 +20,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             </div>
                         </div>
                         <span className="font-semibold text-[15px] tracking-tight text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors">
-                            Sdui Traceability
+                            Trellis
                         </span>
                     </Link>
 
