@@ -11,7 +11,7 @@ import {
     linkTest,
     getInsights,
 } from '../controllers/featureController';
-import { triggerScan, triggerInference, triggerAnalysis } from '../controllers/analysisController';
+import { triggerScan, triggerInference, triggerGitHubInference, triggerAnalysis } from '../controllers/analysisController';
 import {
     getFeatureCost,
     triggerRecommendations,
@@ -36,6 +36,7 @@ router.get('/:id/coverage-chains', getCoverageChains);
 
 // Inference & Analysis
 router.post('/:id/infer', triggerInference);
+router.post('/:id/infer-github', triggerGitHubInference);
 router.post('/:id/analyze', triggerAnalysis);
 
 // Optimization (Phase 4)

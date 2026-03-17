@@ -52,6 +52,12 @@ export const featureService = {
             body: JSON.stringify({ repoPath }),
         }),
 
+    triggerGitHubInference: (featureId: string, githubRepo: string) =>
+        request<InferenceResult>(`/features/${featureId}/infer-github`, {
+            method: 'POST',
+            body: JSON.stringify({ githubRepo }),
+        }),
+
     triggerAnalysis: (featureId: string) =>
         request<InferenceResult>(`/features/${featureId}/analyze`, { method: 'POST' }),
 

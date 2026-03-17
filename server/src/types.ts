@@ -17,6 +17,7 @@ export interface Feature {
     name: string;
     description?: string;
     category?: string;
+    githubRepoUrl?: string;
     scenarios: BehaviorScenario[];
     createdAt: Date;
     updatedAt: Date;

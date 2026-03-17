@@ -53,6 +53,15 @@ export class DataService {
         return row as unknown as Feature;
     }
 
+    async updateFeature(id: string, data: { githubRepoUrl?: string }): Promise<Feature> {
+        const row = await prisma.feature.update({
+            where: { id },
+            data,
+            include: featureFullInclude,
+        });
+        return row as unknown as Feature;
+    }
+
     async deleteFeature(id: string): Promise<boolean> {
         try {
             await prisma.feature.delete({ where: { id } });

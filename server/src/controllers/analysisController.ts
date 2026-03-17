@@ -3,7 +3,7 @@ import path from 'path';
 import { IngestionService } from '../services/ingestionService';
 import { AIService } from '../services/aiService';
 import { DataService } from '../services/dataService';
-import { runInferencePipeline, analyzeExistingFeature } from '../services/inferenceEngine';
+import { runInferencePipeline, analyzeExistingFeature, InferenceSource } from '../services/inferenceEngine';
 
 const ingestionService = new IngestionService(path.join(__dirname, '../../../'));
 const aiService = new AIService();
@@ -53,15 +53,37 @@ export const triggerInference = async (req: Request, res: Response) => {
         const repoPath = (req.body?.repoPath as string) || path.join(__dirname, '../../../');
 
         console.log(`[Inference] Starting for feature ${featureId}...`);
-        const result = await runInferencePipeline(featureId, repoPath);
+        const source: InferenceSource = { type: 'local', repoPath };
+        const result = await runInferencePipeline(featureId, source);
 
-        res.json({
-            message: 'Inference complete',
-            ...result,
-        });
+        res.json({ message: 'Inference complete', ...result });
     } catch (error) {
         console.error('Inference failed:', error);
         res.status(500).json({ error: 'Failed to run inference pipeline' });
+    }
+};
+
+/** Run inference from a GitHub repo */
+export const triggerGitHubInference = async (req: Request, res: Response) => {
+    try {
+        const featureId = paramId(req);
+        const { githubRepo } = req.body;
+
+        if (!githubRepo || !githubRepo.includes('/')) {
+            return res.status(400).json({ error: 'Invalid repo format. Use owner/repo.' });
+        }
+
+        // Save the repo URL on the Feature
+        await dataService.updateFeature(featureId, { githubRepoUrl: githubRepo });
+
+        console.log(`[GitHub Inference] Starting for ${githubRepo}...`);
+        const source: InferenceSource = { type: 'github', repoFullName: githubRepo };
+        const result = await runInferencePipeline(featureId, source);
+
+        res.json({ message: 'GitHub inference complete', ...result });
+    } catch (error) {
+        console.error('GitHub inference failed:', error);
+        res.status(500).json({ error: 'Failed to scan GitHub repository' });
     }
 };
 
@@ -73,10 +95,7 @@ export const triggerAnalysis = async (req: Request, res: Response) => {
         console.log(`[Analysis] Analyzing existing artifacts for feature ${featureId}...`);
         const result = await analyzeExistingFeature(featureId);
 
-        res.json({
-            message: 'Analysis complete',
-            ...result,
-        });
+        res.json({ message: 'Analysis complete', ...result });
     } catch (error) {
         console.error('Analysis failed:', error);
         res.status(500).json({ error: 'Failed to analyze feature' });

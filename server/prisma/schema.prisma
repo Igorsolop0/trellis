@@ -11,11 +11,12 @@ datasource db {
 // ─── Core Domain Models (spec Phase 1) ───
 
 model Feature {
-  id          String              @id @default(uuid())
-  name        String
-  description String?
-  category    String?
-  scenarios   BehaviorScenario[]
+  id             String              @id @default(uuid())
+  name           String
+  description    String?
+  category       String?
+  githubRepoUrl  String?
+  scenarios      BehaviorScenario[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 }

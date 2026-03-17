@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft, Zap, AlertTriangle, CheckCircle2, ChevronDown,
     FileCode2, Link2, Sparkles, FlaskConical, TrendingDown,
-    ArrowRightLeft, Trash2, Plus, RefreshCw, Check, X, Timer, DollarSign,
+    ArrowRightLeft, Trash2, Plus, RefreshCw, Check, X, Timer, DollarSign, Github,
 } from "lucide-react";
 import { useState } from "react";
 import type {
@@ -558,8 +558,18 @@ export default function FeatureDetail() {
         enabled: !!featureId,
     });
 
+    const [githubRepo, setGithubRepo] = useState('');
+
     const inferMutation = useMutation({
         mutationFn: () => featureService.triggerInference(featureId!),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['feature', featureId] });
+            queryClient.invalidateQueries({ queryKey: ['features'] });
+        },
+    });
+
+    const githubMutation = useMutation({
+        mutationFn: () => featureService.triggerGitHubInference(featureId!, githubRepo),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['feature', featureId] });
             queryClient.invalidateQueries({ queryKey: ['features'] });
@@ -670,6 +680,47 @@ export default function FeatureDetail() {
                     >
                         Inference complete: {inferMutation.data.scenariosCreated} scenarios, {inferMutation.data.linksCreated} links, {inferMutation.data.insightsCreated} insights
                     </motion.div>
+                )}
+
+                {/* GitHub integration */}
+                <div className="flex items-center gap-2 mt-4 flex-wrap">
+                    <Github className="size-4 text-[var(--muted-foreground)] shrink-0" />
+                    <input
+                        type="text"
+                        placeholder="owner/repo"
+                        value={githubRepo || feature.githubRepoUrl || ''}
+                        onChange={e => setGithubRepo(e.target.value)}
+                        className="w-64 px-3 py-1.5 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] font-mono"
+                    />
+                    <button
+                        onClick={() => githubMutation.mutate()}
+                        disabled={!(githubRepo || feature.githubRepoUrl)?.includes('/') || githubMutation.isPending}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--secondary)] disabled:opacity-40 transition-all"
+                    >
+                        <Github className="size-3" />
+                        {githubMutation.isPending ? 'Scanning...' : 'Scan GitHub'}
+                    </button>
+                    {feature.githubRepoUrl && !githubRepo && (
+                        <span className="text-[11px] text-[var(--muted-foreground)]">
+                            connected
+                        </span>
+                    )}
+                </div>
+
+                {githubMutation.isSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-3 px-4 py-3 rounded-xl border border-[var(--e2e)]/20 bg-[var(--e2e)]/5 text-[13px] text-[var(--e2e)]"
+                    >
+                        GitHub scan complete: {githubMutation.data.scenariosCreated} scenarios, {githubMutation.data.linksCreated} links, {githubMutation.data.insightsCreated} insights
+                    </motion.div>
+                )}
+
+                {githubMutation.isError && (
+                    <div className="mt-3 px-4 py-3 rounded-xl border border-[var(--severity-high)]/20 bg-[var(--severity-high)]/5 text-[13px] text-[var(--severity-high)]">
+                        Failed to scan repo. Check that the repo exists and is accessible.
+                    </div>
                 )}
             </motion.div>
 

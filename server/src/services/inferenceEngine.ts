@@ -2,7 +2,12 @@ import { DataService } from './dataService';
 import { AIService, cosineSimilarity } from './aiService';
 import { EnrichedTestMeta, parseAndEnrichTests } from './astParserService';
 import { IngestionService, TestFile } from './ingestionService';
+import { GitHubIngestionService } from './githubIngestionService';
 import { TestLayer, TestFramework, InsightType } from '../types';
+
+export type InferenceSource =
+    | { type: 'local'; repoPath: string }
+    | { type: 'github'; repoFullName: string };
 
 const dataService = new DataService();
 const aiService = new AIService();
@@ -70,9 +75,16 @@ function toFramework(fw: string | null): TestFramework | undefined {
 
 // ─── Step 1: Ingest & Enrich ───
 
-async function ingestAndEnrich(repoPath: string): Promise<{ file: TestFile; enriched: EnrichedTestMeta[] }[]> {
-    const ingestion = new IngestionService(repoPath);
-    const files = await ingestion.scanRepository();
+async function ingestAndEnrich(source: InferenceSource): Promise<{ file: TestFile; enriched: EnrichedTestMeta[] }[]> {
+    let files: TestFile[];
+
+    if (source.type === 'github') {
+        const ghIngestion = new GitHubIngestionService(source.repoFullName);
+        files = await ghIngestion.scanRepository();
+    } else {
+        const ingestion = new IngestionService(source.repoPath);
+        files = await ingestion.scanRepository();
+    }
 
     return files.map(file => ({
         file,
@@ -377,7 +389,7 @@ export interface InferenceResult {
 
 export async function runInferencePipeline(
     featureId: string,
-    repoPath: string,
+    source: InferenceSource,
 ): Promise<InferenceResult> {
     const result: InferenceResult = {
         featureId,
@@ -392,8 +404,9 @@ export async function runInferencePipeline(
     if (!feature) throw new Error(`Feature ${featureId} not found`);
 
     // Step 1: Ingest and enrich
-    console.log(`[Inference] Scanning repo at ${repoPath}...`);
-    const fileResults = await ingestAndEnrich(repoPath);
+    const sourceLabel = source.type === 'github' ? source.repoFullName : source.repoPath;
+    console.log(`[Inference] Scanning ${source.type}: ${sourceLabel}...`);
+    const fileResults = await ingestAndEnrich(source);
     const allTests = fileResults.flatMap(fr => fr.enriched);
     console.log(`[Inference] Found ${allTests.length} tests in ${fileResults.length} files`);
 
