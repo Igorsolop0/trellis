@@ -162,36 +162,65 @@ function clusterByHeuristics(allTests: EnrichedTestMeta[]): TestCluster[] {
     return result;
 }
 
-// ─── Step 3: Semantic Refinement (embeddings) ───
+// ─── Step 3: AI-powered Scenario Clustering ───
 
-async function refineWithEmbeddings(clusters: TestCluster[]): Promise<TestCluster[]> {
-    if (!aiService.isAIEnabled()) return clusters;
+async function refineWithAI(allTests: EnrichedTestMeta[], featureName: string, heuristicClusters: TestCluster[]): Promise<TestCluster[]> {
+    if (!aiService.isAIEnabled()) return heuristicClusters;
 
-    // Get embeddings for each cluster title
-    const clusterVectors: { cluster: TestCluster; vector: number[] }[] = [];
-    for (const cluster of clusters) {
-        const text = `${cluster.title}. Tests: ${cluster.tests.map(t => t.testName).join(', ')}`;
-        const vector = await aiService.getEmbedding(text);
-        if (vector.length > 0) {
-            clusterVectors.push({ cluster, vector });
-        }
+    console.log('[Inference] Using AI to cluster tests into behavior scenarios...');
+
+    const testData = allTests.map(t => ({
+        name: t.describeBlocks.length > 0
+            ? `${t.describeBlocks.join(' > ')} > ${t.testName}`
+            : t.testName,
+        layer: aiService.detectLayer(t.testName, t.filePath),
+        filepath: t.filePath,
+        body: t.body?.substring(0, 200),
+    }));
+
+    const aiScenarios = await aiService.inferScenarios(featureName, testData);
+
+    if (aiScenarios.length === 0) {
+        console.log('[Inference] AI returned no scenarios, falling back to heuristics');
+        return heuristicClusters;
     }
 
-    // Merge clusters with very high semantic similarity
-    const merged = new Set<number>();
-    for (let i = 0; i < clusterVectors.length; i++) {
-        if (merged.has(i)) continue;
-        for (let j = i + 1; j < clusterVectors.length; j++) {
-            if (merged.has(j)) continue;
-            const sim = cosineSimilarity(clusterVectors[i].vector, clusterVectors[j].vector);
-            if (sim > 0.85) {
-                clusterVectors[i].cluster.tests.push(...clusterVectors[j].cluster.tests);
-                merged.add(j);
+    console.log(`[Inference] AI grouped tests into ${aiScenarios.length} scenarios`);
+
+    // Convert AI result back to TestCluster format
+    const aiClusters: TestCluster[] = [];
+    const usedIndices = new Set<number>();
+
+    for (const scenario of aiScenarios) {
+        const clusterTests: EnrichedTestMeta[] = [];
+        for (const idx of scenario.testIndices) {
+            if (idx >= 0 && idx < allTests.length && !usedIndices.has(idx)) {
+                clusterTests.push(allTests[idx]);
+                usedIndices.add(idx);
             }
         }
+        if (clusterTests.length > 0) {
+            aiClusters.push({
+                behaviorKey: scenario.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim(),
+                title: scenario.title,
+                tests: clusterTests,
+            });
+        }
     }
 
-    return clusterVectors.filter((_, idx) => !merged.has(idx)).map(cv => cv.cluster);
+    // Add any tests not covered by AI into their own clusters
+    for (let i = 0; i < allTests.length; i++) {
+        if (!usedIndices.has(i)) {
+            const test = allTests[i];
+            aiClusters.push({
+                behaviorKey: behaviorKey(test),
+                title: test.testName,
+                tests: [test],
+            });
+        }
+    }
+
+    return aiClusters;
 }
 
 // ─── Step 4: Compute Confidence & Link Type ───
@@ -374,9 +403,9 @@ export async function runInferencePipeline(
     let clusters = clusterByHeuristics(allTests);
     console.log(`[Inference] Created ${clusters.length} heuristic clusters`);
 
-    // Step 3: Refine with embeddings (if AI enabled)
-    clusters = await refineWithEmbeddings(clusters);
-    console.log(`[Inference] ${clusters.length} clusters after semantic refinement`);
+    // Step 3: Refine with AI (replaces embedding-based refinement)
+    clusters = await refineWithAI(allTests, feature.name, clusters);
+    console.log(`[Inference] ${clusters.length} clusters after AI refinement`);
 
     // Step 4: Persist everything
     for (const cluster of clusters) {
@@ -402,14 +431,20 @@ export async function runInferencePipeline(
                 ? `${test.describeBlocks.join(' > ')} > ${test.testName}`
                 : test.testName;
 
+            // AI-powered intent summarization
+            let intentSummary: string | undefined;
+            if (test.body && aiService.isAIEnabled()) {
+                intentSummary = await aiService.summarizeTestIntent(test.body);
+            } else if (test.assertions.length > 0) {
+                intentSummary = `Asserts: ${test.assertions.slice(0, 3).join(', ')}`;
+            }
+
             const artifact = await dataService.upsertTestArtifact({
                 name: fullName,
                 layer,
                 filepath: test.filePath,
                 codeSignature: test.body?.substring(0, 200),
-                intentSummary: test.assertions.length > 0
-                    ? `Asserts: ${test.assertions.slice(0, 3).join(', ')}`
-                    : undefined,
+                intentSummary,
                 framework: toFramework(test.framework) as string | undefined,
             });
             result.artifactsUpserted++;
@@ -426,9 +461,34 @@ export async function runInferencePipeline(
             result.linksCreated++;
         }
 
-        // Step 5: Generate insights
-        const insights = analyzeScenarioInsights(cluster);
-        for (const insight of insights) {
+        // Step 5: Generate insights (heuristic + AI)
+        const heuristicInsights = analyzeScenarioInsights(cluster);
+
+        // AI-powered gap analysis
+        const layerCounts = {
+            unit: cluster.tests.filter(t => aiService.detectLayer(t.testName, t.filePath) === 'unit').length,
+            api: cluster.tests.filter(t => aiService.detectLayer(t.testName, t.filePath) === 'api').length,
+            e2e: cluster.tests.filter(t => aiService.detectLayer(t.testName, t.filePath) === 'e2e').length,
+        };
+        const aiInsights = await aiService.analyzeGaps(cluster.title, layerCounts);
+
+        // Merge: heuristic first, then AI (deduplicated)
+        const allInsights = [...heuristicInsights];
+        for (const ai of aiInsights) {
+            const isDuplicate = allInsights.some(h =>
+                h.type === ai.type && h.summary.toLowerCase().includes(cluster.title.toLowerCase().substring(0, 20))
+            );
+            if (!isDuplicate) {
+                allInsights.push({
+                    type: ai.type as InsightType,
+                    severity: ai.severity as 'high' | 'medium' | 'low',
+                    summary: ai.summary,
+                    recommendation: ai.recommendation,
+                });
+            }
+        }
+
+        for (const insight of allInsights) {
             await dataService.createInsight({
                 scenarioId: scenario.id,
                 type: insight.type,
@@ -477,7 +537,7 @@ export async function analyzeExistingFeature(featureId: string): Promise<Inferen
     }));
 
     let clusters = clusterByHeuristics(pseudoTests);
-    clusters = await refineWithEmbeddings(clusters);
+    clusters = await refineWithAI(pseudoTests, feature.name, clusters);
 
     for (const cluster of clusters) {
         const avgConfidence = cluster.tests.reduce((sum, t) => {
