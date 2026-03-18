@@ -11,6 +11,7 @@
 - [x] **Recommendation engine** — move/remove/migrate actions з accept/reject workflow
 - [x] **Перейменування Sdui → Trellis**
 - [x] **GitHub repo** — https://github.com/Igorsolop0/trellis
+- [x] **GitHub integration** — read-only скан репозиторіїв через GitHub API (@octokit/rest), пошук тестових файлів, UI для підключення repo
 
 ## Stack Improvements
 
@@ -29,7 +30,7 @@
 ## Tech Debt
 - [ ] **Embeddings недоступні на z.ai** — зараз використовується chat-based similarity; потрібно або self-hosted embedding model, або інший провайдер
 - [ ] **Дублювання сценаріїв при повторному inference** — потрібно очищати старі scenarios перед re-run або merge logic
-- [ ] **Mock data в dummy_repo** — потрібно підключити реальний проект для тестування
+- [ ] **Mock data в dummy_repo** — тепер можна сканувати реальні repo через GitHub, але dummy_repo залишився
 - [ ] **Відсутній error handling в UI** — немає toast notifications при помилках API
 
 ## Ideas / TODO
@@ -38,4 +39,5 @@
 - [ ] **Auth** — щоб команди бачили тільки свої фічі
 - [ ] **Migration mode UI** — детальний view для Cypress → Playwright migration (recommendation `migrate_framework` вже є)
 - [ ] **PDF/CSV export** — traceability report для менеджменту
-- [ ] **Підключення реальних репозиторіїв** — GitHub integration для автоматичного скану тестів з repo
+- [ ] **GitHub OAuth** — замість токена з env, дати юзерам підключати свої GitHub акаунти
+- [ ] **Автоматичний re-scan** — webhook або scheduled scan при push в repo
