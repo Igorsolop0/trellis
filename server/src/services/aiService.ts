@@ -15,6 +15,33 @@ if (apiKey && apiKey !== 'your_key_here') {
     console.log(`[AI] Initialized with model ${modelName} at ${baseURL}`);
 }
 
+// ─── System Prompt ───
+
+const SYSTEM_PROMPT = `You are Trellis — an expert system for test traceability and coverage optimization.
+
+You understand the testing pyramid deeply:
+- UNIT tests: fast (< 100ms), cheap, test isolated functions/classes. Frameworks: Jest, Vitest, Mocha.
+- API/INTEGRATION tests: medium speed (100ms-2s), test HTTP endpoints, database queries, service interactions. Frameworks: Supertest, Axios-based, Pactum.
+- E2E tests: slow (5-30s), expensive, test full user flows through a browser. Frameworks: Playwright, Cypress, Puppeteer.
+
+Cross-layer correlation signals you look for:
+- Shared domain concepts: "login", "checkout", "password validation" across layers
+- Shared API endpoints: unit test mocks /auth/login, API test calls /auth/login, E2E test navigates to login page
+- Shared UI selectors: unit test renders <LoginForm>, E2E test clicks [data-testid="login-button"]
+- Shared assertions: unit checks isValid(), API checks status 200, E2E checks "Welcome" text
+- Describe block hierarchy: tests under the same describe("Login") likely test the same behavior
+- File path proximity: tests in auth/__tests__/ relate to tests in e2e/auth/
+
+You think in terms of BEHAVIOR SCENARIOS — what the user does, not what the code does:
+- GOOD scenario: "User logs in with valid credentials"
+- BAD scenario: "AuthService unit tests" (this is a technical grouping, not a behavior)
+- GOOD scenario: "System rejects expired session tokens"
+- BAD scenario: "Token validation tests" (too vague, not user-centric)
+
+You always respond in valid JSON when asked.`;
+
+// ─── Helpers ───
+
 export function cosineSimilarity(vecA: number[], vecB: number[]) {
     let dotProduct = 0.0;
     let normA = 0.0;
@@ -38,7 +65,10 @@ export class AIService {
         try {
             const completion = await aiClient.chat.completions.create({
                 model: modelName,
-                messages: [{ role: 'user', content: prompt }],
+                messages: [
+                    { role: 'system', content: SYSTEM_PROMPT },
+                    { role: 'user', content: prompt },
+                ],
                 ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
             });
             return completion.choices[0].message.content || '';
@@ -59,12 +89,34 @@ export class AIService {
     async summarizeTestIntent(testBody: string): Promise<string> {
         if (!this.isAIEnabled()) return testBody;
         const result = await this.chat(
-            `Summarize what this test verifies in one sentence. Focus on the user behavior being tested.\n\nTest Code:\n${testBody.substring(0, 1000)}\n\nReturn ONLY the summary.`
+`Analyze this test code and extract what USER-VISIBLE BEHAVIOR it verifies.
+
+Test Code:
+\`\`\`
+${testBody.substring(0, 1500)}
+\`\`\`
+
+Return a single sentence in this format:
+"Verifies that [who] can [do what] [under what conditions] [with what expected outcome]"
+
+Examples:
+- "Verifies that a user can log in with valid email and password and receives a session token"
+- "Verifies that the system rejects login attempts with an incorrect password and returns 401"
+- "Verifies that the submit button is disabled while the login request is in progress"
+
+Focus on:
+1. WHO is the actor (user, system, admin)
+2. WHAT action they perform
+3. WHAT is the expected outcome or assertion
+4. Any edge case or precondition being tested
+
+Do NOT describe implementation details like "calls function X" or "mocks service Y".
+Return ONLY the single sentence, nothing else.`
         );
         return result || testBody;
     }
 
-    // ─── Scenario Inference (Phase 2 — now real) ───
+    // ─── Scenario Inference ───
 
     async inferScenarios(featureName: string, tests: { name: string; layer: string; filepath: string; body?: string }[]): Promise<{
         title: string;
@@ -74,36 +126,58 @@ export class AIService {
     }[]> {
         if (!this.isAIEnabled() || tests.length === 0) return [];
 
-        const testList = tests.map((t, i) =>
-            `[${i}] (${t.layer}) ${t.name} — file: ${t.filepath}`
-        ).join('\n');
+        const testList = tests.map((t, i) => {
+            let entry = `[${i}] layer=${t.layer} | "${t.name}" | file: ${t.filepath}`;
+            if (t.body) {
+                const snippet = t.body.substring(0, 300).replace(/\n/g, ' ').trim();
+                entry += `\n     code: ${snippet}`;
+            }
+            return entry;
+        }).join('\n');
 
-        const prompt = `You are a test traceability expert. Given a feature and its tests, group them into behavior scenarios.
+        const prompt = `Analyze these tests for the "${featureName}" feature and group them into behavior scenarios.
 
-Feature: "${featureName}"
-
-Tests:
+TESTS:
 ${testList}
 
-Group these tests into 2-7 behavior scenarios. Each scenario describes ONE user behavior (e.g. "User logs in with valid credentials", "Invalid password shows error").
+TASK: Group these ${tests.length} tests into behavior scenarios based on what USER BEHAVIOR they collectively verify.
+
+Cross-layer grouping rules:
+- A unit test that validates email format + an API test that rejects invalid email + an E2E test that shows email error = ONE scenario: "System validates email format"
+- Tests that share the same API endpoint (e.g. POST /auth/login) across layers should be in the same scenario
+- Tests that test the SAME user action but at different layers belong together
+- Tests under the same describe() block LIKELY belong to the same scenario (but not always)
+- A single E2E test often maps to multiple unit+API tests that cover the same flow
+
+Naming rules:
+- Title must describe the USER BEHAVIOR: "User logs in with valid credentials" not "Login tests"
+- Use active voice: "User submits...", "System rejects...", "Admin configures..."
+- Be specific: "User sees error for empty password" not "Error handling"
+- One scenario = one distinct user action or system response
+
+Confidence scoring:
+- 0.9-1.0: Tests explicitly share endpoints, selectors, or domain terms across layers
+- 0.7-0.89: Tests are in the same describe block or test the same concept
+- 0.5-0.69: Tests seem related by file proximity or keyword overlap
+- 0.3-0.49: Weak signal, test could belong elsewhere
 
 Respond in JSON:
 {
   "scenarios": [
     {
-      "title": "Human-readable behavior scenario title",
-      "summary": "One sentence explaining what this behavior covers",
-      "testIndices": [0, 3, 5],
+      "title": "Behavior-level scenario title",
+      "summary": "What this scenario covers and why these tests belong together",
+      "testIndices": [0, 3, 7],
       "confidence": 0.85
     }
   ]
 }
 
-Rules:
-- Every test must appear in exactly one scenario
-- Scenario titles should describe USER BEHAVIOR, not technical details
-- Confidence: 0.9+ if tests clearly relate, 0.5-0.8 if inferred, <0.5 if uncertain
-- If a test doesn't fit any group, create a single-test scenario with low confidence`;
+IMPORTANT:
+- Every test index (0 to ${tests.length - 1}) must appear in exactly one scenario
+- Aim for 2-7 scenarios. If there are fewer than 5 tests, 2-3 scenarios is fine
+- Cross-layer scenarios (unit+api or unit+api+e2e) are MORE valuable than single-layer groups
+- If two tests at the same layer check the same thing, note it — they may be redundant`;
 
         const result = await this.chat(prompt, true);
         if (!result) return [];
@@ -127,33 +201,50 @@ Rules:
     }[]> {
         if (!this.isAIEnabled() || tests.length === 0) return [];
 
-        const testList = tests.map(t =>
-            `- ID:${t.id} (${t.layer}) "${t.name}"`
-        ).join('\n');
+        const testList = tests.map(t => {
+            let entry = `- ID:${t.id} (${t.layer}) "${t.name}"`;
+            if (t.body) entry += `\n  code: ${t.body.substring(0, 200).replace(/\n/g, ' ')}`;
+            return entry;
+        }).join('\n');
 
-        const prompt = `Given a behavior scenario and a list of tests, determine how each test relates to the scenario.
+        const prompt = `Determine how each test relates to this behavior scenario.
 
-Scenario: "${scenarioTitle}"
+SCENARIO: "${scenarioTitle}"
 
-Tests:
+TESTS:
 ${testList}
 
-For each test, respond in JSON:
+For each test, determine:
+
+1. linkType:
+   - "verifies" — this test DIRECTLY validates the scenario behavior. The test would fail if this behavior broke.
+   - "partially_verifies" — this test covers a SUBSET of the scenario (e.g. tests only the validation, not the full flow).
+   - "duplicates" — this test checks the SAME thing as another test in this list, at the same or different layer. Flag redundancy.
+
+2. confidence (0.0-1.0):
+   - How sure are you this test belongs to this scenario?
+   - High (0.8+): test name/assertions directly reference the scenario behavior
+   - Medium (0.5-0.8): test is related but could belong elsewhere
+   - Low (<0.5): weak connection
+
+3. rationale:
+   - Explain in 1 sentence WHY this test is linked. Reference specific signals:
+     "Shares POST /auth/login endpoint with API test"
+     "Validates same email format rule as unit test"
+     "E2E flow covers the same login behavior end-to-end"
+     "Tests same assertion (status 401) as [other test name]"
+
+Respond in JSON:
 {
   "links": [
     {
       "testId": "the-test-id",
       "confidence": 0.85,
-      "rationale": "Short explanation of why this test verifies/duplicates this scenario",
+      "rationale": "Specific explanation referencing shared signals",
       "linkType": "verifies"
     }
   ]
-}
-
-linkType options:
-- "verifies" — test directly validates this behavior
-- "partially_verifies" — test covers part of this behavior
-- "duplicates" — test overlaps with another test in this scenario`;
+}`;
 
         const result = await this.chat(prompt, true);
         if (!result) return [];
@@ -177,12 +268,37 @@ linkType options:
     }[]> {
         if (!this.isAIEnabled()) return [];
 
-        const prompt = `Analyze test coverage gaps for a behavior scenario.
+        const prompt = `Analyze test coverage for this behavior scenario and identify meaningful gaps.
 
-Scenario: "${scenarioTitle}"
-Coverage: ${layers.unit} unit tests, ${layers.api} API tests, ${layers.e2e} E2E tests
+SCENARIO: "${scenarioTitle}"
+CURRENT COVERAGE:
+- Unit tests: ${layers.unit}
+- API/Integration tests: ${layers.api}
+- E2E tests: ${layers.e2e}
 
-Identify specific gaps and provide actionable recommendations.
+Apply the testing pyramid principle:
+- Unit layer should have the MOST tests (fast, cheap, isolated logic)
+- API layer should cover key integrations (endpoints, DB queries, auth flows)
+- E2E layer should have the FEWEST tests (slow, expensive, only critical user paths)
+
+Gap types to look for:
+
+1. "missing_layer" — A layer has zero tests but the scenario NEEDS coverage there.
+   - No unit tests for validation logic that gets tested only in E2E = HIGH severity
+   - No E2E test for a non-critical feature = LOW severity (not everything needs E2E)
+   - No API test when there IS an API endpoint being tested = MEDIUM severity
+
+2. "redundancy" — The same check exists at multiple expensive layers.
+   - Password validation checked in both unit AND E2E = can remove from E2E
+   - Same HTTP status assertion in both API and E2E = E2E one is redundant
+
+3. "expensive_e2e" — E2E tests cover logic that should be at a cheaper layer.
+   - Form validation in E2E → should be unit
+   - API response format in E2E → should be API test
+
+4. "weak_assertion" — A layer has tests but they may not be thorough.
+   - 1 unit test for complex validation logic = probably insufficient
+   - Only happy-path tested, no error cases
 
 Respond in JSON:
 {
@@ -190,13 +306,17 @@ Respond in JSON:
     {
       "type": "missing_layer" | "redundancy" | "expensive_e2e" | "weak_assertion",
       "severity": "high" | "medium" | "low",
-      "summary": "Clear description of the gap",
-      "recommendation": "Specific action to fix it"
+      "summary": "Specific, actionable description of the gap",
+      "recommendation": "Concrete next step to fix it (e.g. 'Add unit test for email validation in AuthService.validateEmail()')"
     }
   ]
 }
 
-Only return real, meaningful gaps. If coverage looks good, return empty array.`;
+IMPORTANT:
+- Only return REAL gaps. Do not invent problems.
+- If coverage looks balanced (some unit + some api, or unit + e2e), return fewer or no gaps.
+- Be specific in recommendations — reference the scenario behavior, not generic advice.
+- Maximum 3 gaps per scenario. Prioritize the most impactful ones.`;
 
         const result = await this.chat(prompt, true);
         if (!result) return [];
