@@ -110,6 +110,7 @@ export class DataService {
         codeSignature?: string;
         intentSummary?: string;
         framework?: string;
+        testType?: string;
     }): Promise<TestArtifact> {
         const row = await prisma.testArtifact.upsert({
             where: {
@@ -123,6 +124,7 @@ export class DataService {
                 codeSignature: data.codeSignature,
                 intentSummary: data.intentSummary,
                 framework: data.framework as any,
+                testType: data.testType as any,
             },
             create: {
                 name: data.name,
@@ -131,6 +133,7 @@ export class DataService {
                 codeSignature: data.codeSignature,
                 intentSummary: data.intentSummary,
                 framework: data.framework as any,
+                testType: data.testType as any,
             },
         });
         return row as unknown as TestArtifact;
@@ -237,6 +240,10 @@ export class DataService {
             if (layers.size === 3) coverageStatus = 'full';
             else if (layers.size === 2) coverageStatus = 'partial';
 
+            // Behavior score
+            const behaviorTests = allTests.filter((t) => (t as any).testType === 'behavior').length;
+            const behaviorScore = allTests.length > 0 ? Math.round((behaviorTests / allTests.length) * 100) / 100 : 0;
+
             return {
                 id: f.id,
                 name: f.name,
@@ -245,6 +252,7 @@ export class DataService {
                 testCount: { unit, api, e2e },
                 insightCount,
                 coverageStatus,
+                behaviorScore,
             };
         });
     }

@@ -4,6 +4,7 @@ import { EnrichedTestMeta, parseAndEnrichTests } from './astParserService';
 import { IngestionService, TestFile } from './ingestionService';
 import { GitHubIngestionService } from './githubIngestionService';
 import { TestLayer, TestFramework, InsightType } from '../types';
+import { classifyTestType, calculateBehaviorScore } from './classificationService';
 
 export type InferenceSource =
     | { type: 'local'; repoPath: string }
@@ -452,6 +453,14 @@ export async function runInferencePipeline(
                 intentSummary = `Asserts: ${test.assertions.slice(0, 3).join(', ')}`;
             }
 
+            // Classify test type (behavior vs implementation)
+            const classification = classifyTestType({
+                name: fullName,
+                layer,
+                filepath: test.filePath,
+                body: test.body,
+            });
+
             const artifact = await dataService.upsertTestArtifact({
                 name: fullName,
                 layer,
@@ -459,6 +468,7 @@ export async function runInferencePipeline(
                 codeSignature: test.body?.substring(0, 200),
                 intentSummary,
                 framework: toFramework(test.framework) as string | undefined,
+                testType: classification.type,
             });
             result.artifactsUpserted++;
 

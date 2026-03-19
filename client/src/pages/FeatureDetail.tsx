@@ -135,6 +135,15 @@ function TestArtifactRow({ link }: { link: ScenarioLinkWithTest }) {
                             {t.framework}
                         </span>
                     )}
+                    {t.testType && t.testType !== 'unknown' && (
+                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                            t.testType === 'behavior' ? 'bg-[var(--confidence-high)]/10 text-[var(--confidence-high)]' :
+                            t.testType === 'non_functional' ? 'bg-[var(--api)]/10 text-[var(--api)]' :
+                            'bg-[var(--muted)] text-[var(--muted-foreground)]'
+                        }`}>
+                            {t.testType === 'behavior' ? 'BHV' : t.testType === 'implementation' ? 'IMPL' : 'NFR'}
+                        </span>
+                    )}
                 </div>
                 {link.rationale && (
                     <div className="flex items-center gap-1 mt-1 text-[11px] text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity">

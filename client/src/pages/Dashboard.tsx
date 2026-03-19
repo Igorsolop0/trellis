@@ -89,6 +89,18 @@ function FeatureRow({ feature, index }: { feature: FeatureSummary; index: number
                         <span className="font-mono text-sm text-[var(--muted-foreground)]">
                             {totalTests} tests
                         </span>
+                        {totalTests > 0 && (
+                            <span
+                                className="text-[11px] font-mono px-1.5 py-0.5 rounded"
+                                style={{
+                                    backgroundColor: `color-mix(in srgb, ${feature.behaviorScore >= 0.6 ? 'var(--confidence-high)' : feature.behaviorScore >= 0.3 ? 'var(--confidence-mid)' : 'var(--severity-high)'} 10%, transparent)`,
+                                    color: feature.behaviorScore >= 0.6 ? 'var(--confidence-high)' : feature.behaviorScore >= 0.3 ? 'var(--confidence-mid)' : 'var(--severity-high)',
+                                }}
+                                title="Behavior Coverage Score — % of tests that verify user behavior vs implementation"
+                            >
+                                {Math.round(feature.behaviorScore * 100)}% behavior
+                            </span>
+                        )}
                         {feature.insightCount > 0 && (
                             <span className="flex items-center gap-1 text-[12px] text-[var(--severity-medium)]">
                                 <AlertTriangle className="size-3" />

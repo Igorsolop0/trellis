@@ -34,6 +34,8 @@ export interface BehaviorScenario {
     updatedAt: string;
 }
 
+export type TestClassification = 'behavior' | 'implementation' | 'non_functional' | 'unknown';
+
 export interface TestArtifact {
     id: string;
     name: string;
@@ -42,6 +44,7 @@ export interface TestArtifact {
     codeSignature?: string;
     intentSummary?: string;
     framework?: string;
+    testType?: TestClassification;
     createdAt: string;
     updatedAt: string;
 }
@@ -80,6 +83,7 @@ export interface FeatureSummary {
     testCount: { unit: number; api: number; e2e: number };
     insightCount: number;
     coverageStatus: CoverageStatus;
+    behaviorScore: number;
 }
 
 export interface ScenarioCoverageChain {

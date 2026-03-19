@@ -44,6 +44,7 @@ model TestArtifact {
   codeSignature   String?
   intentSummary   String?
   framework       TestFramework?
+  testType        TestClassification @default(unknown)
   avgDurationMs   Int?
   flakyRate       Float            @default(0)
   runCount        Int              @default(0)
@@ -171,4 +172,11 @@ enum RecommendStatus {
   accepted
   rejected
   done
+}
+
+enum TestClassification {
+  behavior
+  implementation
+  non_functional
+  unknown
 }
