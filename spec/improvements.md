@@ -33,6 +33,18 @@
 - [ ] **Mock data в dummy_repo** — тепер можна сканувати реальні repo через GitHub, але dummy_repo залишився
 - [ ] **Відсутній error handling в UI** — немає toast notifications при помилках API
 
+## ISTQB Alignment (see [spec/istqb-alignment.md](istqb-alignment.md))
+
+### High Impact
+- [ ] **Test type classification** — AI визначає чи тест покриває behavior (black-box) чи implementation (white-box). Відповідає на питання: "мої тести реально покривають user behavior?"
+- [ ] **Behavior Coverage Score** — новий KPI: % тестів що покривають user behavior vs internal implementation
+- [ ] **Risk scoring на scenarios** — business-critical flows (login, payment) отримують вищий пріоритет в рекомендаціях
+
+### Medium Impact
+- [ ] **Розширити layers до 5** — `unit` | `integration` | `api` | `e2e` | `acceptance` (ISTQB визначає 5 рівнів, ми маємо 3)
+- [ ] **Acceptance criteria linking** — прив'язати scenarios до acceptance criteria з user stories
+- [ ] **Smarter gap detection** — аналіз за ISTQB техніками: equivalence partitioning, boundary values, state transitions
+
 ## Ideas / TODO
 - [ ] **CI/CD інтеграція** — GitHub Actions webhook для автоматичного підтягування test results, duration, flaky stats
 - [ ] **Realtime updates** — Supabase Realtime для live оновлень при запуску тестів
