@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { featureService } from "@/services/featureService";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Plus, ArrowRight, FlaskConical, Layers, AlertTriangle, Sparkles } from "lucide-react";
+import { Plus, ArrowRight, FlaskConical, Layers, AlertTriangle, Sparkles, Github, Search, Loader2 } from "lucide-react";
 import type { FeatureSummary } from "@/types";
 import { useState } from "react";
 
@@ -121,6 +121,7 @@ export default function Dashboard() {
     const [showCreate, setShowCreate] = useState(false);
     const [newName, setNewName] = useState('');
     const [newCategory, setNewCategory] = useState('');
+    const [githubRepo, setGithubRepo] = useState('');
 
     const { data: features, isLoading } = useQuery({
         queryKey: ['features'],
@@ -137,6 +138,13 @@ export default function Dashboard() {
         },
     });
 
+    const scanMutation = useMutation({
+        mutationFn: () => featureService.scanGitHubRepo(githubRepo.trim()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['features'] });
+        },
+    });
+
     const totalTests = features?.reduce((s, f) => s + f.testCount.unit + f.testCount.api + f.testCount.e2e, 0) ?? 0;
     const totalScenarios = features?.reduce((s, f) => s + f.scenarioCount, 0) ?? 0;
     const totalInsights = features?.reduce((s, f) => s + f.insightCount, 0) ?? 0;
@@ -147,9 +155,45 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">
                     Test Traceability
                 </h1>
-                <p className="text-[var(--muted-foreground)] mt-1.5 text-[15px]">
+                <p className="text-[var(--muted-foreground)] mt-1.5 text-[15px] mb-6">
                     Behavior-based coverage across unit, API, and E2E layers
                 </p>
+
+                <div className="flex gap-3 items-center">
+                    <div className="relative flex-1 max-w-lg">
+                        <Github className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--muted-foreground)]" />
+                        <input
+                            type="text"
+                            placeholder="owner/repo"
+                            value={githubRepo}
+                            onChange={e => setGithubRepo(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && githubRepo.trim() && !scanMutation.isPending && scanMutation.mutate()}
+                            className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-[var(--secondary)] border border-[var(--border)] text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all"
+                        />
+                    </div>
+                    <button
+                        onClick={() => scanMutation.mutate()}
+                        disabled={!githubRepo.trim() || scanMutation.isPending}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[var(--primary)] text-[var(--primary-foreground)] disabled:opacity-40 hover:opacity-90 transition-opacity"
+                    >
+                        {scanMutation.isPending ? (
+                            <>
+                                <Loader2 className="size-4 animate-spin" />
+                                Scanning...
+                            </>
+                        ) : (
+                            <>
+                                <Search className="size-4" />
+                                Scan
+                            </>
+                        )}
+                    </button>
+                </div>
+                {scanMutation.isError && (
+                    <p className="text-[var(--severity-high)] text-sm mt-2">
+                        Failed to scan repository. Check the repo format (owner/repo) and try again.
+                    </p>
+                )}
             </motion.div>
 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
@@ -226,9 +270,9 @@ export default function Dashboard() {
                 </div>
             ) : (
                 <div className="text-center py-20 text-[var(--muted-foreground)]">
-                    <Layers className="size-10 mx-auto mb-3 opacity-30" />
+                    <Github className="size-10 mx-auto mb-3 opacity-30" />
                     <p className="text-lg font-medium">No features yet</p>
-                    <p className="text-sm mt-1">Create a feature and run inference to get started</p>
+                    <p className="text-sm mt-1">Enter a GitHub repository above and click Scan to get started</p>
                 </div>
             )}
         </div>

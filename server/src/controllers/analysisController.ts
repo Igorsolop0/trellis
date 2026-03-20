@@ -87,6 +87,35 @@ export const triggerGitHubInference = async (req: Request, res: Response) => {
     }
 };
 
+/** Scan a GitHub repo: auto-create a feature and run full inference */
+export const scanGitHubRepo = async (req: Request, res: Response) => {
+    try {
+        const { githubRepo } = req.body;
+
+        if (!githubRepo || !githubRepo.includes('/')) {
+            return res.status(400).json({ error: 'Invalid repo format. Use owner/repo.' });
+        }
+
+        const repoName = githubRepo.split('/').pop() || githubRepo;
+
+        // Create a feature named after the repo
+        const feature = await dataService.createFeature({
+            name: repoName,
+            category: 'github',
+        });
+        await dataService.updateFeature(feature.id, { githubRepoUrl: githubRepo });
+
+        console.log(`[GitHub Scan] Created feature "${repoName}" (${feature.id}), scanning ${githubRepo}...`);
+        const source: InferenceSource = { type: 'github', repoFullName: githubRepo };
+        const result = await runInferencePipeline(feature.id, source);
+
+        res.json({ message: 'GitHub scan complete', ...result });
+    } catch (error) {
+        console.error('GitHub scan failed:', error);
+        res.status(500).json({ error: 'Failed to scan GitHub repository' });
+    }
+};
+
 /** Analyze existing artifacts for a feature (no repo scan) */
 export const triggerAnalysis = async (req: Request, res: Response) => {
     try {

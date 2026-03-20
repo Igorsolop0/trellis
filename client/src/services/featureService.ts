@@ -61,6 +61,12 @@ export const featureService = {
     triggerAnalysis: (featureId: string) =>
         request<InferenceResult>(`/features/${featureId}/analyze`, { method: 'POST' }),
 
+    scanGitHubRepo: (githubRepo: string) =>
+        request<InferenceResult & { featureId: string }>('/features/scan-github', {
+            method: 'POST',
+            body: JSON.stringify({ githubRepo }),
+        }),
+
     triggerScan: () => request<{ message: string; scannedFiles: number; upsertedArtifacts: number }>(
         '/features/scan', { method: 'POST' },
     ),

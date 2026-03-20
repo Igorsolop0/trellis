@@ -11,7 +11,7 @@ import {
     linkTest,
     getInsights,
 } from '../controllers/featureController';
-import { triggerScan, triggerInference, triggerGitHubInference, triggerAnalysis } from '../controllers/analysisController';
+import { triggerScan, triggerInference, triggerGitHubInference, triggerAnalysis, scanGitHubRepo } from '../controllers/analysisController';
 import {
     getFeatureCost,
     triggerRecommendations,
@@ -26,6 +26,7 @@ router.get('/', getAllFeatures);
 router.post('/', createFeature);
 router.get('/test-artifacts', getTestArtifacts);
 router.post('/scan', triggerScan);
+router.post('/scan-github', scanGitHubRepo);
 router.get('/:id', getFeatureById);
 router.delete('/:id', deleteFeature);
 
